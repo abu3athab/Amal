@@ -1,8 +1,16 @@
 import 'dart:developer';
 
+import 'package:demo2/Main%20page/mainPage.dart';
 import 'package:demo2/colors.dart';
 import 'package:demo2/settings%20page/settingspage.dart';
+import 'package:demo2/settings%20page/updateUserPass.dart';
+import 'package:demo2/settings%20page/updateaccountinfo.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../log in/logIn.dart';
+import 'Notificationsettings.dart';
+import 'editPro.dart';
 
 class Config extends StatefulWidget {
   @override
@@ -19,9 +27,26 @@ class ConfigChild extends State<Config> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        title: Text(
-          "Settings",
-          style: TextStyle(color: Colors.black),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MainPage()),
+                );
+              },
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                color: logoColor,
+              ),
+            ),
+            Text(
+              "                     Settings",
+              style: TextStyle(color: Colors.black),
+            ),
+          ],
         ),
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -35,8 +60,11 @@ class ConfigChild extends State<Config> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: ListTile(
-            onTap: () => null,
-            title: Text("Edit profile"),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => Updateaccountinfo()),
+            ),
+            title: Text("Edit Account"),
             trailing: Icon(
               Icons.keyboard_arrow_right,
               color: logoColor,
@@ -51,14 +79,17 @@ class ConfigChild extends State<Config> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: ListTile(
-            onTap: () => null,
-            title: Text("Edit email"),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => UpdateUserPass()),
+            ),
+            title: Text("Change password"),
             trailing: Icon(
               Icons.keyboard_arrow_right,
               color: logoColor,
             ),
             leading: Icon(
-              Icons.email,
+              Icons.password_rounded,
               color: logoColor,
             ),
           ),
@@ -67,26 +98,10 @@ class ConfigChild extends State<Config> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: ListTile(
-            onTap: () => null,
-            title: Text("Edit password"),
-            trailing: Icon(
-              Icons.keyboard_arrow_right,
-              color: logoColor,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => Notifcationsettings()),
             ),
-            leading: Icon(
-              Icons.lock,
-              color: logoColor,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: height * 0.03,
-        ),
-        Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: ListTile(
-            onTap: () => null,
             title: Text("Notifications"),
             trailing: Icon(
               Icons.keyboard_arrow_right,
@@ -124,7 +139,13 @@ class ConfigChild extends State<Config> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: ListTile(
-            onTap: () => null,
+            onTap: () {
+              FirebaseAuth.instance.signOut();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Login()),
+              );
+            },
             title: Text("Log out"),
             trailing: Icon(
               Icons.keyboard_arrow_right,

@@ -41,6 +41,20 @@ dependencies:
   cloud_firestore: ^4.4.5
   intl: ^0.18.1
   flutter_time_picker_spinner: ^2.0.0
+  firebase_auth: ^4.6.1
+  email_validator: ^2.1.17
+  shrink_sidemenu: ^2.0.0+2-null-safety
+  get: ^4.6.5
+  dynamic_list_item: ^1.2.0
+  email_auth: ^1.0.0
+  email_otp: ^2.0.1
+  image_picker: ^0.8.7+5
+  shared_preferences: ^2.1.1
+  firebase_storage: ^11.2.1
+  firebase_messaging: ^14.6.2
+  http_auth: ^1.0.1
+  webview_flutter: ^4.2.1
+
 
 dev_dependencies:
   flutter_test:

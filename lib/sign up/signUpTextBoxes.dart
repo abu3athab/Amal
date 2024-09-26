@@ -1,22 +1,43 @@
+import 'dart:async';
+
+import 'package:demo2/log%20in/logIn.dart';
+import 'package:demo2/log%20in/user.dart';
+import 'package:demo2/sign%20up/sendUserSignupOTP.dart';
+import 'package:email_otp/email_otp.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+//asdsadsa
+final _firebase = FirebaseAuth.instance;
 
 class SignUpForUser extends StatefulWidget {
   @override
-  State<SignUpForUser> createState() => _SignUpForUserChild();
+  State<SignUpForUser> createState() => SignUpForUserChild();
 }
 
-class _SignUpForUserChild extends State<SignUpForUser> {
+class SignUpForUserChild extends State<SignUpForUser> {
   final _signUpFormKey = GlobalKey<FormState>();
+  EmailOTP auth = EmailOTP();
 
-  final _userNameController = TextEditingController();
+  TextEditingController _userNameController = TextEditingController();
 
-  final _emailController = TextEditingController();
+  TextEditingController _emailController = TextEditingController();
 
-  final _phoneNumberController = TextEditingController();
+  TextEditingController _phoneNumberController = TextEditingController();
 
-  final _passwordController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
+
+  String get username => this._userNameController.text.trim();
+
+  String get email => this._emailController.text.trim();
+
+  String get phoneNumber => this._phoneNumberController.text.trim();
+
+  String get password => _passwordController.text.trim();
+
   @override
   void dispose() {
     _passwordController.dispose();
@@ -61,6 +82,16 @@ class _SignUpForUserChild extends State<SignUpForUser> {
     }
     if (!pass.contains(RegExp(r'[!@#$%&*?]'))) {
       return "password must contain at least one of these special characters (!@#%^&*?)";
+    } else {
+      return null;
+    }
+  }
+
+  String? checkEmail(String? email) {
+    if (email == null || email.isEmpty) {
+      return "email field must not be empty";
+    } else if (!EmailValidator.validate(email)) {
+      return "email isn't valid";
     } else {
       return null;
     }
@@ -171,11 +202,7 @@ class _SignUpForUserChild extends State<SignUpForUser> {
                     SizedBox(
                       height: 75,
                       child: TextFormField(
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Email must not be empty";
-                          }
-                        },
+                        validator: checkEmail,
                         controller: _emailController,
                         decoration: InputDecoration(
                             filled: true,
@@ -236,23 +263,55 @@ class _SignUpForUserChild extends State<SignUpForUser> {
                   ],
                 ),
               ),
+              TextButton(
+                onPressed: () {},
+                child: Text("Resend"),
+                style: ButtonStyle(
+                    foregroundColor: MaterialStateProperty.all(logoColor)),
+              ),
               Container(
                 margin: const EdgeInsets.all(20),
                 width: width * 0.6,
                 height: height * 0.05,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_signUpFormKey.currentState?.validate() == true) {
+                  onPressed: () async {
+                    if (_signUpFormKey.currentState!.validate()) {
+                      // If the form is valid, display a snackbar. In the real world,
+                      // you'd often call a server or save the information in a database.
+
                       // Save the form data and navigate to the next screen
                       final username = _userNameController.text;
                       final phoneNumber = _phoneNumberController.text;
                       final email = _emailController.text;
-                      final location = _passwordController.text;
-
-                      // TODO: save the data and navigate to the next screen
+                      final password = _passwordController.text;
+                      auth.setConfig(
+                          appEmail: "me@rohitchouhan.com",
+                          appName: "Email OTP",
+                          userEmail: email,
+                          otpLength: 4,
+                          otpType: OTPType.digitsOnly);
+                      if (await auth.sendOTP() == true) {
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(const SnackBar(
+                          content: Text("OTP has been sent"),
+                        ));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => UserOTP(
+                                    auth: auth,
+                                    userName: username,
+                                    email: email,
+                                    password: password,
+                                    phoneNumber: phoneNumber,
+                                  )),
+                        );
+                      }
                     }
                   },
+
                   // ignore: sort_child_properties_last
+
                   child: const Text(
                     'Sign Up',
                     style: TextStyle(color: Colors.white),

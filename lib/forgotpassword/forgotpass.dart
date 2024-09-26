@@ -1,8 +1,10 @@
 import 'package:demo2/Main%20page/mainpagesearch.dart';
 import 'package:demo2/colors.dart';
+import 'package:email_auth/email_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-
+import 'package:email_otp/email_otp.dart';
 import '../log in/logIn.dart';
 import 'forgotpassver.dart';
 
@@ -15,11 +17,14 @@ class ForgotPass extends StatefulWidget {
 
 class ForgotPassChild extends State<ForgotPass> {
   final emailControllerpass = TextEditingController();
-  @override
+  EmailOTP myauth = EmailOTP();
+  Future<void> sendResetPassEmail(String email) async {
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+  }
+
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-
     return Scaffold(
       backgroundColor: Color.fromRGBO(255, 255, 255, 1),
       body: Center(
@@ -71,11 +76,25 @@ class ForgotPassChild extends State<ForgotPass> {
               width: width * 0.6,
               height: height * 0.07,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ForgotPassver()),
-                  );
+                onPressed: () async {
+                  if (emailControllerpass.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text("email field must not be empty"),
+                      duration: Duration(seconds: 2),
+                    ));
+                  } else {
+                    String email = emailControllerpass.text;
+                    sendResetPassEmail(email);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => ForgotPassver(
+                                email: emailControllerpass.text,
+                                myAuth: myauth,
+                              )),
+                    );
+                  }
                 },
                 child: Text(
                   "Send",
