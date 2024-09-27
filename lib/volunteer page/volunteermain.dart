@@ -60,6 +60,10 @@ class VounteermainChild extends State<Vounteermain> {
       child: SafeArea(
         bottom: false,
         child: Scaffold(
+          appBar: AppBar(
+            title: Text("Main volunteer page"),
+            backgroundColor: logoColor,
+          ),
           backgroundColor: Colors.white,
           body: Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -100,7 +104,7 @@ class VounteermainChild extends State<Vounteermain> {
                               focusedBorder: UnderlineInputBorder(
                                   borderSide:
                                       BorderSide(color: Colors.grey, width: 1)),
-                              hintText: 'Try Charity,Food.clothing...',
+                              hintText: 'Search events by their name',
                             ),
                             onChanged: (value) {
                               setState(() {
@@ -130,22 +134,16 @@ class VounteermainChild extends State<Vounteermain> {
                     },
                     child: Text(
                       "manage your events",
-                      style: TextStyle(fontSize: width * 0.06),
+                      style:
+                          TextStyle(fontSize: width * 0.06, color: logoColor),
                     )),
                 Divider(
                   thickness: 2,
                 ),
                 Row(
                   children: [
-                    Text("Events in amman"),
+                    Text("Events in jordan"),
                     Spacer(),
-                    Row(
-                      children: [
-                        TextButton(
-                            onPressed: () {}, child: Text("Change city")),
-                        TextButton(onPressed: () {}, child: Text("See all"))
-                      ],
-                    )
                   ],
                 ),
                 Expanded(
@@ -197,6 +195,9 @@ class VounteermainChild extends State<Vounteermain> {
                                           date: data['date'],
                                           startTime: data['startTime'],
                                           location: data['location'],
+                                          finishTime: data['endTime'],
+                                          desc: data['description'],
+                                          eventID: data['id'],
                                         );
                                       }
                                       if (data['name']
@@ -208,6 +209,9 @@ class VounteermainChild extends State<Vounteermain> {
                                           date: data['date'],
                                           startTime: data['startTime'],
                                           location: data['location'],
+                                          finishTime: data['endTime'],
+                                          desc: data['description'],
+                                          eventID: data['id'],
                                         );
                                       } else
                                         return Container();

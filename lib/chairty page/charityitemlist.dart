@@ -1,7 +1,27 @@
+import 'dart:io';
+
 import 'package:demo2/chairty%20page/charitypage.dart';
+import 'package:demo2/chairty%20page/productpage.dart';
 import 'package:flutter/material.dart';
 
 class Charityitems extends StatelessWidget {
+  final String imageUrl;
+  final String name;
+  final String desc;
+  final double cost;
+  final String categ;
+  final String itemID;
+  final String charityID;
+
+  Charityitems(
+      {required this.imageUrl,
+      required this.name,
+      required this.desc,
+      required this.cost,
+      required this.categ,
+      required this.itemID,
+      required this.charityID});
+
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
@@ -10,7 +30,21 @@ class Charityitems extends StatelessWidget {
       width: width * 0.95,
       height: height * 0.161,
       child: InkWell(
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => Productpage(
+                      imageUrl: imageUrl,
+                      name: name,
+                      desc: desc,
+                      categ: categ,
+                      cost: cost,
+                      itemID: itemID,
+                      charityID: charityID,
+                    )),
+          );
+        },
         child: Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0),
@@ -20,7 +54,7 @@ class Charityitems extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                child: Image.asset("assets/fashion.png"),
+                child: Image.network(imageUrl),
               ),
               Padding(
                 padding: const EdgeInsets.all(5.0),
@@ -28,7 +62,7 @@ class Charityitems extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "T-shirt for one child",
+                      name,
                       style: TextStyle(fontSize: height * 0.02),
                     ),
                     SizedBox(
@@ -37,15 +71,10 @@ class Charityitems extends StatelessWidget {
                     SizedBox(
                       height: height * 0.005,
                     ),
-                    Text(
-                      "description : soft cotton T_shirt for children",
-                      style: TextStyle(fontSize: height * 0.012),
-                      softWrap: true,
-                    ),
                     Spacer(),
                     Text(
-                      "price: 5 Jod",
-                      style: TextStyle(fontSize: height * 0.03),
+                      "price: ${cost} Jod",
+                      style: TextStyle(fontSize: height * 0.02),
                       softWrap: true,
                       maxLines: 2,
                     ),

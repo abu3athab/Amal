@@ -19,30 +19,17 @@ class Login extends StatefulWidget {
 }
 
 class LoginChild extends State<Login> {
-  CollectionReference _userRef = FirebaseFirestore.instance.collection('Users');
   final _formKey = GlobalKey<FormState>();
   FocusNode labelTextNode = new FocusNode();
 
   TextEditingController _emailController = TextEditingController();
 
   TextEditingController _passwordController = TextEditingController();
+  var _userRef = FirebaseFirestore.instance.collection('Users');
+  var auth = FirebaseAuth.instance;
 
   var isHidden = true;
   static bool isLoggedIn = false;
-
-  Future<bool> checkUserCredentials(String email, String password) async {
-    try {
-      final QuerySnapshot snapshot = await _userRef
-          .where('email', isEqualTo: email)
-          .where('password', isEqualTo: password)
-          .get();
-
-      return snapshot.size > 0;
-    } catch (e) {
-      print('Error checking user credentials: $e');
-      return false;
-    }
-  }
 
   @override
   void dispose() {
@@ -59,7 +46,7 @@ class LoginChild extends State<Login> {
     return Scaffold(
       body: Form(
         key: _formKey,
-        child: Container(
+        child: SizedBox(
           height: height,
           width: width,
           child: SingleChildScrollView(
@@ -203,23 +190,93 @@ class LoginChild extends State<Login> {
                       if (_formKey.currentState!.validate()) {
                         String _email = _emailController.text;
                         String _password = _passwordController.text;
+                        try {
+                          var isCredentialsCorrect =
+                              await auth.signInWithEmailAndPassword(
+                                  email: _email, password: _password);
 
-                        final bool isCredentialsCorrect =
-                            await checkUserCredentials(_email, _password);
-                        if (isCredentialsCorrect) {
-                          setState(() {
-                            isLoggedIn = true;
-                          });
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => MainPage()),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(
-                                "users not found please check your email and password"),
-                            duration: Duration(seconds: 2),
-                          ));
+                          final uid = auth.currentUser!.uid;
+                          final userData = await FirebaseFirestore.instance
+                              .collection('Users')
+                              .where('uid', isEqualTo: uid)
+                              .get();
+
+                          if (userData.docs.isNotEmpty) {
+                            final userSnapshot = userData.docs
+                                .firstWhere((doc) => doc['uid'] == uid);
+                            String type = userSnapshot.get('type');
+                            bool isVerfied = userSnapshot.get('isVerfied');
+
+                            print(type);
+                            print(isVerfied);
+
+                            if (type == 'user' && isVerfied) {
+                              Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => MainPage()),
+                                  (Route<dynamic> route) => false);
+                            } else if (type == 'charity' && isVerfied) {
+                              Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => Charityadminmain()),
+                                  (Route<dynamic> route) => false);
+                            } else if (type == 'admin' && isVerfied) {
+                              Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => AdminMain()),
+                                  (Route<dynamic> route) => false);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                  content: Text(
+                                      "Your account has not been approved by the admin!")));
+                            }
+                          }
+                        } on FirebaseAuthException catch (e) {
+                          if (e.code == 'network-request-failed') {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content: Text("No internet connection!!"),
+                              duration: Duration(seconds: 2),
+                            ));
+                          } else if (e.code == "wrong-password") {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content: Text("Please enter correct password"),
+                              duration: Duration(seconds: 2),
+                            ));
+                          } else if (e.code == 'user-not-found') {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content: Text("User not found"),
+                              duration: Duration(seconds: 2),
+                            ));
+                            // print('Email not found');
+                          } else if (e.code == 'too-many-requests') {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content:
+                                  Text("Too many attempts please try later"),
+                              duration: Duration(seconds: 2),
+                            ));
+                            //print('Too many attempts please try later');
+                          } else if (e.code == 'unknwon') {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content: Text("Error has occured!"),
+                              duration: Duration(seconds: 2),
+                            ));
+                          } else if (e.code == 'unknown') {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content: Text("Error occured!"),
+                              duration: Duration(seconds: 2),
+                            ));
+                          } else {
+                            print(e.code);
+                          }
                         }
                       }
                     },
@@ -253,37 +310,11 @@ class LoginChild extends State<Login> {
                           "Sign Up",
                           style: TextStyle(color: logoColor),
                         )),
-                    TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => MainPage()),
-                          );
-                        },
-                        child: Text("bypass auth"))
                   ],
                 ),
                 Row(
                   children: [
                     Spacer(),
-                    TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => Charityadminmain()),
-                          );
-                        },
-                        child: Text("chariy admin")),
-                    TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => AdminMain()),
-                          );
-                        },
-                        child: Text("App Admin")),
                     Spacer(),
                   ],
                 ),

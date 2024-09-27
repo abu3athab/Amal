@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:demo2/colors.dart';
+import 'package:demo2/sign%20up/sendCharityUserOTP.dart';
+import 'package:email_auth/email_auth.dart';
+import 'package:email_otp/email_otp.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../log in/logIn.dart';
 import '../log in/user.dart';
@@ -19,16 +25,39 @@ class SignUpChartiy extends StatefulWidget {
 }
 
 class _SignUpChartiyState extends State<SignUpChartiy> {
+  EmailOTP auth = EmailOTP();
   final _formKey = GlobalKey<FormState>();
   final _firebase = FirebaseAuth.instance;
   static bool isEmailVerified = false;
   Timer? timer;
+  File? selectedImage;
+  ImagePicker picker = ImagePicker();
+  String imageUrl = "";
+  XFile? image;
 
   final _charityNameController = TextEditingController();
   final _phoneNumberController = TextEditingController();
   final _emailController = TextEditingController();
   final _locationController = TextEditingController();
   final _passwordController = TextEditingController();
+  TextEditingController charityController = TextEditingController();
+  TextEditingController bioController = TextEditingController();
+  String? location = "Amman";
+
+  var locations = [
+    'Ajlun',
+    'Amman',
+    'Aqaba',
+    'Balqa',
+    'Irbid',
+    'Jarash',
+    'Karak',
+    'Maan',
+    'Madaba',
+    'Mafraq',
+    'Tafilah',
+    'Zarqa',
+  ];
   bool _isHidden = true;
 
   @override
@@ -130,7 +159,7 @@ class _SignUpChartiyState extends State<SignUpChartiy> {
                           new RegExp(r"[A-Z,a-z]")),
                     ],
                     decoration: InputDecoration(
-                        hintText: "Charity name",
+                        hintText: "Charity admin name",
                         prefixIcon: Icon(
                           Icons.account_circle,
                           color: logoColor,
@@ -217,19 +246,100 @@ class _SignUpChartiyState extends State<SignUpChartiy> {
                         )),
                     validator: checkPassword,
                   ),
+
                   SizedBox(
                     height: 16,
                   ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text("what is the name of the Charity"),
+                  ),
+                  TextFormField(
+                    obscureText: false,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Charity name',
+                    ),
+                    controller: charityController,
+                  ),
+                  SizedBox(
+                    height: height * 0.02,
+                  ),
+                  /////////
+
+                  ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          var pickedImage = await picker.pickImage(
+                              source: ImageSource.gallery);
+                          if (pickedImage == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text("no image selected!!"),
+                              duration: Duration(seconds: 2),
+                            ));
+                          } else {
+                            setState(() {
+                              selectedImage = File(pickedImage.path);
+                            });
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("this extension isn't supported"),
+                            duration: Duration(seconds: 2),
+                          ));
+                        }
+                      },
+                      child: Text("Pick Image")),
+                  SizedBox(height: height * 0.02),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text("what is the goal of this Charity"),
+                  ),
+                  TextFormField(
+                    controller: bioController,
+                    keyboardType: TextInputType.multiline,
+                    maxLines: 3,
+                    obscureText: false,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Charity goal (bio)',
+                    ),
+                  ),
+                  SizedBox(
+                    height: height * 0.02,
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text("where is the charity located"),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: DropdownButton(
+                      // Initial Value
+                      value: location,
+
+                      // Down Arrow Icon
+                      icon: const Icon(Icons.keyboard_arrow_down),
+
+                      // Array list of items
+                      items: locations.map((String items) {
+                        return DropdownMenuItem(
+                          value: items,
+                          child: Text(items),
+                        );
+                      }).toList(),
+                      // After selecting the desired option,it will
+                      // change button value to selected value
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          location = newValue!;
+                        });
+                      },
+                    ),
+                  ),
                 ]),
               ),
-              TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Charitydetails()),
-                    );
-                  },
-                  child: Text("bypass")),
               Container(
                 margin: const EdgeInsets.all(20),
                 width: width * 0.6,
@@ -237,34 +347,56 @@ class _SignUpChartiyState extends State<SignUpChartiy> {
                 child: ElevatedButton(
                   onPressed: () async {
                     if (_formKey.currentState?.validate() == true) {
-                      // Save the form data and navigate to the next screen
-                      final charityName = _charityNameController.text;
-                      final phoneNumber = _phoneNumberController.text;
-                      final email = _emailController.text;
-                      final password = _passwordController.text;
-                      final _firebase = FirebaseAuth.instance;
+                      if (selectedImage != null) {
+                        final charityUserName = _charityNameController.text;
+                        final phoneNumber = _phoneNumberController.text;
+                        final email = _emailController.text;
+                        final password = _passwordController.text;
+                        final _firebase = FirebaseAuth.instance;
+                        final charityName = charityController.text;
+                        final charityBio = bioController.text;
 
-                      // TODO: save the data and navigate to the next screen
-                      try {
-                        final userCredentials =
-                            await _firebase.createUserWithEmailAndPassword(
-                                email: email, password: password);
-                      } on FirebaseAuthException catch (e) {
-                        if (e.code == 'email-already-in-use') {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            duration: Duration(seconds: 5),
-                            content: Text('this email is already registered'),
+                        final loca = location;
+                        var postID =
+                            DateTime.now().microsecondsSinceEpoch.toString();
+                        Reference reference = FirebaseStorage.instance
+                            .ref()
+                            .child('id/images')
+                            .child('post_$postID');
+                        await reference.putFile(selectedImage!);
+                        imageUrl = await reference.getDownloadURL();
+
+                        // TODO: save the data and navigate to the next screen
+
+                        auth.setConfig(
+                            appEmail: "me@rohitchouhan.com",
+                            appName: "Email OTP",
+                            userEmail: email,
+                            otpLength: 4,
+                            otpType: OTPType.digitsOnly);
+                        if (await auth.sendOTP() == true) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(const SnackBar(
+                            content: Text("OTP has been sent"),
                           ));
-                        } else if (e.code == 'error_invalid_email') {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              duration: Duration(seconds: 5),
-                              content: Text('invalid ')));
-                        } else if (e.code == "ERROR_INVALID_CREDENTIAL") {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              duration: Duration(seconds: 5),
-                              content: Text('invalid credentials ')));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => CharityOTP(
+                                      auth: auth,
+                                      userName: charityUserName,
+                                      email: email,
+                                      password: password,
+                                      phoneNumber: phoneNumber,
+                                      charityName: charityName,
+                                      charityBio: charityBio,
+                                      imageUrl: imageUrl,
+                                      loca: loca,
+                                    )),
+                          );
                         }
                       }
+                      // Save the form data and navigate to the next screen
                     }
                   },
 

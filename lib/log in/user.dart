@@ -14,10 +14,9 @@ class UserInfo {
       required this.password});
 }
 
-Future<void> addUser(String username, String email, String phoneNumber,
-    String password, String v) async {
-  CollectionReference users =
-      await FirebaseFirestore.instance.collection('Users');
+Future<void> addUser(
+    String username, String email, String phoneNumber, String type) async {
+  CollectionReference users = FirebaseFirestore.instance.collection('Users');
   FirebaseAuth auth = FirebaseAuth.instance;
   String uid = auth.currentUser!.uid.toString();
   DocumentReference userDoc = users.doc(uid);
@@ -25,35 +24,100 @@ Future<void> addUser(String username, String email, String phoneNumber,
     'name': username,
     'email': email,
     'phone number': phoneNumber,
-    'password': password,
-    'verified': v,
-    'uid': uid
+    'type': type,
+    'uid': uid,
+    'isVerfied': true,
+    'count': 0
   });
   return;
 }
 
+Future<void> updateUserProfileInfo(
+    String fieldName, String newValue, String uid) async {
+  CollectionReference userRef = FirebaseFirestore.instance.collection('Users');
+  DocumentReference userDoc = userRef.doc(uid);
+  await userDoc.update({fieldName: newValue});
+}
+
 Future<void> addCharity(
-    String username, String email, String phoneNumber, String password) async {
+  String username,
+  String email,
+  String phoneNumber,
+  String type,
+  String charityName,
+  String charityBio,
+  String imageUrl,
+  String location,
+) async {
   try {
     CollectionReference charities =
-        await FirebaseFirestore.instance.collection('Charities');
+        await FirebaseFirestore.instance.collection('Users');
     FirebaseAuth auth = FirebaseAuth.instance;
     String uid = auth.currentUser!.uid;
-    charities.add({
+    DocumentReference userDoc = charities.doc(uid);
+
+    userDoc.set({
       'name': username,
       'email': email,
       'phone number': phoneNumber,
-      'password': password,
-      'verified': 'false',
-      'charity name': "",
-      'charity bio': "",
-      'location': '',
-      'uid': uid
+      'charity name': charityName,
+      'charity bio': charityBio,
+      'location': location,
+      'type': type,
+      'imageUrl': imageUrl,
+      'isVerfied': false,
+      'total': 0,
+      'count': 0,
+      'uid': uid,
     });
+
     return;
   } catch (e) {
     print("error");
   }
+}
+
+Future<void> addCharityProduct(String name, String desc, double cost,
+    String categ, String imageUrl) async {
+  String uid = FirebaseAuth.instance.currentUser!.uid;
+  CollectionReference productRef =
+      FirebaseFirestore.instance.collection('Users');
+  DocumentReference userDoc = productRef.doc(uid);
+  var ref = userDoc.collection('myProducts');
+  DocumentReference doc = await ref.add({
+    'product name': name,
+    'desc': desc,
+    'cost': cost,
+    'categ': categ,
+    'imageUrl': imageUrl,
+    'count': 0,
+    'id': ''
+  });
+  await doc.update({'id': doc.id});
+}
+
+Future<void> addPurchasesOfUsers(String uid, String itemId, double price,
+    String purchaseTime, String charityID) async {
+  var productRef =
+      FirebaseFirestore.instance.collection('Users').doc(charityID);
+  var userTransactionRef =
+      FirebaseFirestore.instance.collection('userTransactions');
+
+  var userRef = FirebaseFirestore.instance.collection('Users').doc(uid);
+  await userTransactionRef.add({
+    'userID': uid,
+    'itemID': itemId,
+    'purchase time': purchaseTime,
+    'price': price,
+    'charityID': charityID
+  });
+  await productRef.update(
+      {'total': FieldValue.increment(price), 'count': FieldValue.increment(1)});
+  await productRef
+      .collection('myProducts')
+      .doc(itemId)
+      .update({'count': FieldValue.increment(1)});
+  await userRef.update({'count': FieldValue.increment(1)});
 }
 
 Future<void> updateUserEmailVerification(String v) async {
@@ -93,12 +157,14 @@ Future<bool> addUrgentBloodUser(String locationName, String bloodType,
         .collection('urgent');
     FirebaseAuth auth = FirebaseAuth.instance;
     String uid = auth.currentUser!.uid.toString();
-    urgentBloodRef.add({
+    DocumentReference doc = urgentBloodRef.doc(uid);
+    doc.set({
       'location name': locationName,
       'blood type': bloodType,
       'number of units': requiredUnits,
       'urgency': isUrgent,
-      'user id': uid
+      'user id': uid,
+      'isVerfied': false
     });
 
     return true;
@@ -118,12 +184,14 @@ Future<bool> addNonUrgentBloodUser(String locationName, String bloodType,
         .collection('nonurgent');
     FirebaseAuth auth = FirebaseAuth.instance;
     String uid = auth.currentUser!.uid.toString();
-    urgentBloodRef.add({
+    DocumentReference doc = urgentBloodRef.doc(uid);
+    doc.set({
       'location name': locationName,
       'blood type': bloodType,
       'number of units': requiredUnits,
       'urgency': isUrgent,
-      'user id': uid
+      'user id': uid,
+      'isVerfied': false
     });
 
     return true;
@@ -157,7 +225,7 @@ String getUserId() {
 }
 
 Future<void> addEvent(String name, String description, String date,
-    String startTime, String endTime, String location) async {
+    String startTime, String endTime, String location, String uid) async {
   try {
     // Get the current user's ID
     String uid = FirebaseAuth.instance.currentUser!.uid;
@@ -189,14 +257,19 @@ Future<void> addEvent(String name, String description, String date,
         userDocRef.collection('myEvents');
 
     // Add data to the collection
-    await myEventsCollectionRef.add({
+    DocumentReference newEventDocRef = await myEventsCollectionRef.add({
+      'id': '', // Placeholder value for the ID field
       'name': name,
       'description': description,
       'date': date,
       'startTime': startTime,
       'endTime': endTime,
       'location': location,
+      'uid': uid
     });
+
+    // Update the "id" field with the actual ID of the document
+    await newEventDocRef.update({'id': newEventDocRef.id});
 
     print('Document and collection created successfully!');
   } catch (e) {
@@ -204,8 +277,8 @@ Future<void> addEvent(String name, String description, String date,
   }
 }
 
-Future<void> updateCharityEmailVerification(
-    String name, String bio, String location, String v) async {
+Future<void> updateCharityDetails(
+    String name, String bio, String location) async {
   try {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final FirebaseAuth auth = FirebaseAuth.instance;
@@ -227,7 +300,6 @@ Future<void> updateCharityEmailVerification(
           'charity name': name,
           'charity bio': bio,
           'location': location,
-          'verified': v
         });
       }
     }
@@ -274,4 +346,41 @@ Future<List<QuerySnapshot>> fetchSubcollectionsDataForDocuments(
   }
 
   return await Future.wait(allEvents);
+}
+
+Future<void> updateUserName(String userId, String updatedValue) async {
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  try {
+    // Get the document reference using the user ID
+    DocumentReference userRef = firestore.collection('Users').doc(userId);
+
+    // Update the specific field using the update method
+    await userRef.update({'name': updatedValue});
+
+    print('User field updated successfully.');
+  } catch (e) {
+    print('Error updating user field: $e');
+  }
+}
+
+Future<void> updateUserPhoneNumber(String userId, String updatedValue) async {
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  try {
+    // Get the document reference using the user ID
+    DocumentReference userRef = firestore.collection('Users').doc(userId);
+
+    // Update the specific field using the update method
+    await userRef.update({'phone number': updatedValue});
+
+    print('User field updated successfully.');
+  } catch (e) {
+    print('Error updating user field: $e');
+  }
+}
+
+Future<void> addEnrolledUsers(String uid, String eventID) async {
+  var userRef = FirebaseFirestore.instance.collection("enrolledUsersEvents");
+  await userRef.add({'userID': uid, 'eventID': eventID});
 }
